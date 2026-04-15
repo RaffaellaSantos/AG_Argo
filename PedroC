@@ -1,0 +1,229 @@
+import numpy as np
+import random as rd
+import networkx as nx
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
+print("=== CONFIGURAÇÃO DA EMBARCAÇAO ===")
+
+C = float(input("Comprimento da embarcação (cm): "))
+fator_min = 3.2
+fator_max = 4.0
+
+num_containers = int(input("Número de containers: "))
+
+linhas_barco = int(input("Linhas do barco: "))
+colunas_barco = int(input("Colunas do barco: "))
+
+linhas_pier = int(input("Linhas do pier: "))
+colunas_pier = int(input("Colunas do pier: "))
+
+
+pos_barco = linhas_barco * colunas_barco
+pos_pier = linhas_pier * colunas_pier
+
+TOTAL_POSICOES = pos_barco + pos_pier
+POSICOES = list(range(TOTAL_POSICOES))
+
+if num_containers > TOTAL_POSICOES:
+    print("Erro: containers demais!")
+    exit()
+
+L = C / ((fator_min + fator_max)/2)
+print(f"\nLargura estimada: {L:.2f} cm")
+# GRAFO PONDERADO
+
+
+G = nx.Graph()
+
+for i in range(TOTAL_POSICOES):
+    tipo = "barco" if i < pos_barco else "pier"
+    G.add_node(i, tipo=tipo)
+
+def vizinhos(idx, linhas, colunas, offset=0):
+    i = (idx - offset) // colunas
+    j = (idx - offset) % colunas
+
+    viz = []
+    movimentos = [(-1,0),(1,0),(0,-1),(0,1)]
+
+    for di, dj in movimentos:
+        ni, nj = i + di, j + dj
+        if 0 <= ni < linhas and 0 <= nj < colunas:
+            viz.append(offset + ni*colunas + nj)
+
+    return viz
+
+# barco (melhor região)
+for p in range(pos_barco):
+    for v in vizinhos(p, linhas_barco, colunas_barco):
+        G.add_edge(p, v, peso=1)
+
+# pier (menos desejável)
+for p in range(pos_barco, TOTAL_POSICOES):
+    for v in vizinhos(p, linhas_pier, colunas_pier, offset=pos_barco):
+        G.add_edge(p, v, peso=2)
+#  ALGORITMO GENÉTICO
+
+
+historico_populacoes = []
+historico_fitness = []
+
+def gerar_cromossomo():
+    return rd.sample(POSICOES, num_containers)
+
+def calcular_fitness(cromossomo):
+
+    barco = [p for p in cromossomo if p < pos_barco]
+    pier = [p for p in cromossomo if p >= pos_barco]
+
+    fitness = 0
+
+    fitness += len(barco) * 10
+    fitness -= len(pier) * 5
+
+    matriz = np.zeros((linhas_barco, colunas_barco))
+
+    for p in barco:
+        i = p // colunas_barco
+        j = p % colunas_barco
+        matriz[i][j] += 1
+
+    soma_linhas = np.sum(matriz, axis=1)
+    soma_colunas = np.sum(matriz, axis=0)
+
+    fitness -= (np.var(soma_linhas) + np.var(soma_colunas)) * 10
+
+    # distância no grafo ponderado
+    for i in range(len(cromossomo)):
+        for j in range(i+1, len(cromossomo)):
+            try:
+                dist = nx.shortest_path_length(
+                    G,
+                    cromossomo[i],
+                    cromossomo[j],
+                    weight='peso'
+                )
+                fitness -= dist * 0.5
+            except:
+                pass
+
+    ratio = C / L
+    if ratio < fator_min or ratio > fator_max:
+        fitness -= 50
+
+    return fitness
+
+
+def gerar_populacao(tamanho):
+    return [gerar_cromossomo() for _ in range(tamanho)]
+
+def selecao(populacao, fitnesses):
+    i, j = rd.sample(range(len(populacao)), 2)
+    return populacao[i] if fitnesses[i] > fitnesses[j] else populacao[j]
+
+def crossover(pai, mae):
+    tamanho = len(pai)
+    inicio, fim = sorted(rd.sample(range(tamanho), 2))
+
+    filho = [-1]*tamanho
+    filho[inicio:fim] = pai[inicio:fim]
+
+    pos = fim
+    for gene in mae:
+        if gene not in filho:
+            if pos >= tamanho:
+                pos = 0
+            filho[pos] = gene
+            pos += 1
+
+    return filho
+
+def mutacao(cromossomo, taxa=0.1):
+    if rd.random() < taxa:
+        i, j = rd.sample(range(len(cromossomo)), 2)
+        cromossomo[i], cromossomo[j] = cromossomo[j], cromossomo[i]
+    return cromossomo
+
+
+def AG(geracoes=15, tamanho_pop=10):
+
+    populacao = gerar_populacao(tamanho_pop)
+
+    for g in range(geracoes):
+
+        fitnesses = [calcular_fitness(ind) for ind in populacao]
+
+        melhor_idx = np.argmax(fitnesses)
+        melhor = populacao[melhor_idx]
+
+        historico_populacoes.append(melhor)
+        historico_fitness.append(fitnesses[melhor_idx])
+
+        print(f"\n===== GERAÇÃO {g+1} =====")
+        print("Melhor fitness:", fitnesses[melhor_idx])
+        print("Cromossomo:", melhor)
+
+        nova_pop = []
+
+        while len(nova_pop) < tamanho_pop:
+            pai = selecao(populacao, fitnesses)
+            mae = selecao(populacao, fitnesses)
+
+            filho = crossover(pai, mae)
+            filho = mutacao(filho)
+
+            nova_pop.append(filho)
+
+        populacao = nova_pop
+
+    return melhor
+#  EXECUÇÃO
+
+melhor_final = AG()
+
+
+
+plt.figure()
+plt.plot(historico_fitness)
+plt.title("Evolução do Fitness")
+plt.xlabel("Geração")
+plt.ylabel("Fitness")
+plt.grid()
+plt.show()
+
+
+fig, ax = plt.subplots(figsize=(8,6))
+pos = nx.spring_layout(G)
+
+def atualizar(frame):
+    ax.clear()
+
+    cromossomo = historico_populacoes[frame]
+
+    cores = []
+    for node in G.nodes():
+        if node in cromossomo:
+            cores.append("red")
+        elif G.nodes[node]['tipo'] == "barco":
+            cores.append("blue")
+        else:
+            cores.append("gray")
+
+    nx.draw(G, pos, node_color=cores, with_labels=True, ax=ax)
+
+    ax.set_title(f"Geração {frame+1}")
+
+ani = animation.FuncAnimation(
+    fig,
+    atualizar,
+    frames=len(historico_populacoes),
+    interval=800,
+    repeat=False
+)
+
+
+ani.save("evolucao_ag.gif", writer="pillow", fps=1)
+
+
+plt.show()
