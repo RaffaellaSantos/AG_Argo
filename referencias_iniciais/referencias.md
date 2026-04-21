@@ -1,4 +1,4 @@
-# Resumo das atividades
+# Resumo das atividades e referências utilizadas
 
 ### Estabilidade no AG
 
