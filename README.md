@@ -15,7 +15,7 @@ Implementar o método de Algoritmos Genéticos para o descarregamento de uma bal
     * Cada carretista pode levar até 2 contêineres por viagem.
 * **Objetivos:** Maximizar a estabilidade da balsa a cada retirada e minimizar o *makespan* (tempo total de descarregamento + entregas).
 
-## 2. Equipe
+## 2. Equipe de otimização
 - [Adriana](https://github.com/RaffaellaSantos)
 - [Luana](https://github.com/luanacrdoso)
 - [Pedro](https://github.com/phcdleng24-del)
