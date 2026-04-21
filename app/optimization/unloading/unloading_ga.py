@@ -13,7 +13,7 @@ class Argo:
         travel_model,
         num_carriers: int,
         margem_erro: int = 15,
-        num_containers: int = 20,
+        num_containers: int = 24,
         tam_populacao: int = 100,
         p_mutacao: float = 0.1,  # Evitar minimos locais
         p_crossover: float = 0.8,
@@ -69,11 +69,17 @@ class Argo:
     def calcular_estabilidade(self, barco_aux: np.ndarray, peso_total_barco: float):
         """Calcula o centro de massa e retorna a penalidade caso esteja instável."""
         if peso_total_barco > 0:
-            pesos_x = np.sum(barco_aux, axis=(0, 1))
-            centro_massa_x = np.sum(pesos_x * np.arange(4)) / peso_total_barco
+            pos_x = np.array([2.125, 6.375, 10.625, 14.875])
+            centro_barco = 8.5
 
-            if abs(centro_massa_x - 1.5) > 1.0:
-                return 50.0  # penalidade
+            pesos_colunas = np.sum(barco_aux, axis=(0,1))
+            pesos_x = np.sum(barco_aux, axis=(0, 1))
+
+            centro_massa_x = np.sum(pesos_colunas * pos_x) / peso_total_barco
+
+            desvio = abs(centro_massa_x - centro_barco)
+            if desvio > 1.0: 
+                return desvio * 100.0
 
         return 0.0
 
@@ -249,7 +255,7 @@ class Argo:
             return 1.0 / (fator_falha + penalidade + makespan + 1.0)
 
         custo_total = makespan + penalidade
-        return 10000.0 / (custo_total + 1.0)
+        return 1000000.0 / (custo_total + 1.0)
 
     def gerar_cromossomo(self):
         """
