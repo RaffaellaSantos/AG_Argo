@@ -1,57 +1,88 @@
-# AG_Argo
-Algoritmo genético para a otimização de descarregamento de containers e roteamento dos mesmos para locais definidos.
+# Argo: Otimização de Descarregamento e Roteamento de Balsa
 
-# Resumo das atividades
+Este projeto implementa uma solução baseada em **Algoritmos Genéticos (AG)** para resolver o problema logístico de descarregamento de uma balsa, garantindo a estabilidade da embarcação e a eficiência no roteamento das entregas finais no campus.
 
-### Estabilidade no AG
+## 1. Problema Resolvido
 
--> Essa parte foi revisada por [Luana](https://github.com/luanacrdoso)
+**Enunciado:**
+Implementar o método de Algoritmos Genéticos para o descarregamento de uma balsa com 24 contêineres:
+* **Capacidade da Balsa:** Matriz 4x4 por andar (máximo 11 contêineres por andar).
+* **Carga:** 12 contêineres de massa X (Azul) e 12 contêineres de massa 2X (Vermelho). No código, X é definido como 57.0g.
+* **Píer:** Limite de 8 contêineres empilhados em uma matriz 2x2x2.
+* **Logística de Entrega:**
+    * 16 contêineres possuem destinos específicos no campus (EST).
+    * Uso de no máximo 2 carretistas simultâneos.
+    * Cada carretista pode levar até 2 contêineres por viagem.
+* **Objetivos:** Maximizar a estabilidade da balsa a cada retirada e minimizar o *makespan* (tempo total de descarregamento + entregas).
 
-Referência: [Abordagem metaheurística híbrida para otimização do
-planejamento de estiva de navios porta-contêineres](https://repositorio.jesuita.org.br/bitstream/handle/UNISINOS/5347/Joel%20da%20Silva%20Gon%C3%A7alves%20J%C3%BAnior_.pdf?isAllowed=y&sequence=1)
+## 2. Equipe
+- [Adriana](https://github.com/RaffaellaSantos)
+- [Luana](https://github.com/luanacrdoso)
+- [Pedro](https://github.com/phcdleng24-del)
+- [Victor](https://github.com/ordozgoite)
 
-No artigo, o AG é utilizado para otimizar o arranjo de carga visando o equilíbrio da embarcação, isso é implementado diretamento na função de avaliação do indivíduo.
+## 3. Como o Algoritmo Funciona
 
-- Implementação no Código:
-    - Cálculo do Centro de Massa: A função _calcular_estabilidade_ calcula o desvio do centro de massa em relação ao eixo central do braco (CENTRO_BARCO = 8.5)
-    - Penalização no AG: O algoritmo aplica uma penalidade proporcional ao desvio. Isso reflete a teoria de que soluções que comprometem a segurança (estabilidade) devem ter um fitness menor para serem descartadas pela seleção natural do AG.
+O sistema utiliza uma abordagem de **Algoritmo Genético Híbrido**:
 
-### Restrições de Carregamento e Descarregamento
+1.  **Representação do Indivíduo (Cromossomo):** Cada gene representa uma ação de descarregamento, contendo as coordenadas da garra no barco, as coordenadas de destino no píer e um índice de decisão para a demanda de destino.
+2.  **Função de Fitness (Avaliação):**
+    * **Estabilidade:** Calcula o centro de massa da balsa a cada retirada. Desvios do centro são penalizados.
+    * **Tempo (Makespan):** Simula o tempo total que os carretistas levam para completar as rotas e o guindaste leva para mover os contêineres.
+    * **Penalidades:** Movimentos inválidos (tentar pegar onde não há container ou largar em local cheio) recebem altas penalidades no *fitness*.
+3.  **Simulação e Roteamento:** O algoritmo integra um gerenciador de porto (`PortManager`) que despacha carretistas em tempo real assim que o píer atinge a capacidade de carga para uma viagem, respeitando a regra de no máximo 2 entregadores ativos.
+4.  **Grafo de Rotas:** As distâncias entre os pontos do campus são calculadas usando o algoritmo de Floyd-Warshall sobre um grafo definido com as localizações reais da instituição.
 
-Referência: [Aplicação de algoritmos genéticos no planejamento de embarque em um terminal de contêineres](https://repositorio.ufu.br/handle/123456789/14378)
+## 4. Como Rodar o Algoritmo
 
-O capitulo 4.6 trata da restrição "LIFO" (Last-In, First-Out) ou de empilhamento, onde um container não pode ser retirado se houver outro sobre ele.
+Certifique-se de ter o Python 3.12 ou superior instalado.
 
-- Implementação no Código:
-    - Verificação de empilhamento: A função _verificar_container_abaixo_ varre o eixo Z (altura) do topo para baixo.
-    - Lógica de Retirada: No simulador de descarregamento, o código busca o pegar_z mais alto disponível em uma coluna. Se houver containers acima, a lógica de busca garante que apenas o topo seja acessível, respeitando a restrição física de movimentação em portos e navios descrita na literatura.
+### Passo 1: Criar o ambiente virtual (venv)
+No terminal, dentro da pasta raiz do projeto:
+```bash
+python -m venv .venv
+```
 
-### Rota dos Containers e Movimentação Interna
+### Passo 2: Ativar o ambiente virtual
+* **Windows:**
+    ```bash
+    .\.venv\Scripts\activate
+    ```
+* **Linux/Mac:**
+    ```bash
+    source .venv/bin/activate
+    ```
 
--> O modelo inicial de roteamento foi feito por [Victor](https://github.com/ordozgoite)
--> Usar o Networkx foi ideia do [Pedro](https://github.com/phcdleng24-del)
+### Passo 3: Instalar as dependências
+```bash
+pip install -r requirements.txt
+```
 
-Referência: [Algoritmos genéticos aplicados ao problema de roteamento de veículos com múltiplos depósitos](https://repositorio.unifei.edu.br/xmlui/handle/123456789/3920)
+### Passo 4: Executar a Main
+```bash
+python -m app.main
+```
+O algoritmo iniciará as gerações do AG. Caso a solução falhe em esvaziar o barco na primeira tentativa, ele reiniciará automaticamente usando o melhor indivíduo anterior como semente até obter sucesso.
 
-- Implementação no Código:
+## 5. Resultados
 
-    - Modelagem por Grafos: O algoritmo utiliza a biblioteca networkx para criar um grafo do campus, definindo nós de destino e rotas intermediárias com pesos (distâncias).
+Ao final da execução bem-sucedida, o console exibirá:
+- O log passo a passo de cada movimento do guindaste.
+- O tempo de saída de cada carretista e quais contêineres foram levados.
+- O **Makespan Total** da operação.
+- O número de contêineres restantes no barco (objetivo: 0).
 
-    - Matriz de Distâncias: O uso do algoritmo de Floyd-Warshall (nx.floyd_warshall_numpy) para converter o grafo em uma matriz de tempos de viagem é uma técnica clássica de pesquisa operacional mencionada para otimizar trajetos de carreristas (AGVs ou caminhões).
+<p align="center">
+  <img src="estabilidade_final.png" width="500"><br>
+  <em>Figura 1 - Estabilidade final do barco</em>
+</p>
 
-### Integração do Sistema
+<p align="center">
+  <img src="evolucao_ag.png" width="500"><br>
+  <em>Figura 2 - Evolução dos indivíduos</em>
+</p>
 
-Referência: [Uma abordagem de resolução integrada para os problemas de roteirização e carregamento de veículos](https://lume.ufrgs.br/handle/10183/25871)
-
--> A junção do AG de descarregamento e rotas foi feito por [Adriana](https://github.com/RaffaellaSantos)
-
-- Implementação no Código:
-
-    - Sincronização Guindaste-Carrerista: A classe Argo integra o _PortManager_ dentro do loop de descarregamento.
-
-    - Gestão de Filas: O método _despachar_caminhao_ controla quando um carrerista sai do píer com base na capacidade máxima (CAPACIDADE_MAX) e no tempo de prontidão do container (ready_time).
-
-    - Makespan Total: O objetivo final do algoritmo, assim como na dissertação, é minimizar o _makespan_total_, que é o tempo decorrido desde o primeiro movimento do guindaste até a última entrega feita pelos carreristas.
-
-### Resultados visuais do AG
-
+<p align="center">
+  <img src="pareto_argo.png" width="500"><br>
+  <em>Figura 3 - Fronteira de Pareto</em>
+</p>
