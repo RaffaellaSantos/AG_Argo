@@ -55,16 +55,16 @@ Referência: [Uma abordagem de resolução integrada para os problemas de roteir
 -> Essa parte foi feita por [Luana](https://github.com/luanacrdoso)
 
 <p align="center">
-  <img src="estabilidade_final.png" width="500"><br>
+  <img src="../estabilidade_final.png" width="500"><br>
   <em>Figura 1 - Estabilidade final do barco</em>
 </p>
 
 <p align="center">
-  <img src="evolucao_ag.png" width="500"><br>
+  <img src="../evolucao_ag.png" width="500"><br>
   <em>Figura 2 - Evolução dos indivíduos</em>
 </p>
 
 <p align="center">
-  <img src="pareto_argo.png" width="500"><br>
+  <img src="../pareto_argo.png" width="500"><br>
   <em>Figura 3 - Fronteira de Pareto</em>
 </p>
