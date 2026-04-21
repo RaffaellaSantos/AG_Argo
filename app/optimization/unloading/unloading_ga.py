@@ -68,6 +68,8 @@ class Argo:
 
     def calcular_estabilidade(self, barco_aux: np.ndarray, peso_total_barco: float):
         """Calcula o centro de massa e retorna a penalidade caso esteja instável."""
+        centro_massa_x=8.5
+
         if peso_total_barco > 0:
             pos_x = np.array([2.125, 6.375, 10.625, 14.875])
             centro_barco = 8.5
@@ -79,15 +81,17 @@ class Argo:
 
             desvio = abs(centro_massa_x - centro_barco)
             if desvio > 1.0: 
-                return desvio * 100.0
+                return desvio * 100.0, centro_massa_x
 
-        return 0.0
+        return 0.0, centro_massa_x
 
     def simular_descarregamento(self, cromossomo: np.ndarray, log: bool = False):
         """Simula o descarregamento de containers e o transporte dos mesmos"""
 
+
         barco_aux = copy.deepcopy(self.barco)
         pier_aux = copy.deepcopy(self.pier)
+        historico_cm = []
 
         demandas_restantes = {
             AZUL: copy.deepcopy(DEMANDA_CAMPUS[AZUL]),
@@ -150,7 +154,10 @@ class Argo:
             movimento, posicao_garra = self.garra(posicao_garra, barco_y, barco_x)
             tempo_guidaste += movimento
             peso_total_barco -= tipo_buscado
-            penalidade += self.calcular_estabilidade(barco_aux, peso_total_barco)
+            custo_estabilidade, cm_atual = self.calcular_estabilidade(barco_aux, peso_total_barco)
+
+            penalidade+= custo_estabilidade
+            historico_cm.append(cm_atual)
 
             movimento, posicao_garra = self.garra(posicao_garra, pier_y, pier_x)
             tempo_chegada_pier = tempo_guidaste + movimento
@@ -240,7 +247,7 @@ class Argo:
             print(f"CONTAINERS DEIXADOS NO PÍER (Estoque): {estoque_final}")
             print("=" * 50 + "\n")
 
-        return containers_restantes, makespan_total, penalidade
+        return containers_restantes, makespan_total, penalidade, historico_cm
 
     def funcao_fitness(self, cromossomo: np.ndarray):
         """
@@ -248,7 +255,7 @@ class Argo:
         No entanto, recompensa menor custo na distância percorrida.
         """
 
-        restantes, makespan, penalidade = self.simular_descarregamento(cromossomo, log=False)
+        restantes, makespan, penalidade, _ = self.simular_descarregamento(cromossomo, log=False)
 
         if restantes > 0:
             fator_falha = 1000000.0 * (restantes ** 2)

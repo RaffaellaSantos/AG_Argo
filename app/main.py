@@ -2,7 +2,7 @@ from app.optimization.routes.campus_graph import create_campus_graph, get_travel
 from app.optimization.routes.time_travel_model import TravelTimeModel
 from app.optimization.unloading.unloading_ga import Argo
 from app.config import BARCO_INICIAL, MARGEM_ERRO, NUM_CARRERISTAS, NUM_GERACOES, NUM_INDIVIDUOS, NUM_CONTAINERS
-
+from app.visualizer import grafico_evolucao, grafico_estabilidade, fronteira_de_pareto
 
 def main():
 
@@ -27,10 +27,23 @@ def main():
             num_containers=NUM_CONTAINERS,
             semente_individuo=melhor_semente
         )
-
+        
         melhor_hist, media_hist, melhor_individuo = argo_ag.inicializar_otimizacao()
+        grafico_evolucao(melhor_hist, media_hist)
+        
+        restantes, makespan, penalidade, lista_cm = argo_ag.simular_descarregamento(melhor_individuo)
+        grafico_estabilidade(lista_cm)
 
-        restantes, makespan, penalidade = argo_ag.simular_descarregamento(melhor_individuo)
+        print("Calculando Fronteira de Pareto")
+        lista_makespans = []
+        lista_penalidades = []
+
+        for ind in argo_ag.populacao[:50]:
+            _, mk, pen, _ = argo_ag.simular_descarregamento(ind)
+            lista_makespans.append(mk)
+            lista_penalidades.append(pen)
+
+        fronteira_de_pareto(lista_makespans, lista_penalidades)
 
         if restantes == 0:
             is_empty_boat = True
