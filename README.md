@@ -89,4 +89,4 @@ Ao final da execução bem-sucedida, o console exibirá:
 
 ## 6. Referências
 
-Para conferir as referências e como elas são utilizadas no nosso algoritmo veja o documento [referencias](referencias_iniciais/atividades.md)
+Para conferir as referências e como elas são utilizadas no nosso algoritmo veja o documento [referencias](https://github.com/RaffaellaSantos/AG_Argo/blob/main/referencias_iniciais/referencias.md)
