@@ -57,44 +57,44 @@ def create_campus_graph():
         "no_3": ("Corredor Bloco A-B-1.2", "Corredor Bloco A-B-1.1", 187),
         "no_4": ("Corredor Bloco A-B-1.1", "Sala A4", 2890),
         "no_5": ("Corredor Bloco A-B-1.1", "Corredor Daetec 1", 1487),
-        "no_6": ("Corredor Daetec 1", "Entrada", 600), # Não medido
-        "no_7": ("Entrada", "Escadaria entrada", 28000), # Não medido
-        "no_8": ("Entrada", "Hub", 30000), # Não medido
-        "no_9": ("Entrada", "Escadaria biblioteca", 10000), # Não medido
-        "no_10": ("Entrada", "Callidus", 20000), # Não medido
-        "no_11": ("Entrada", "Corredor Bloco B-C-1.1", 460), # Não medido
-        "no_12": ("Escadaria entrada", "Hub", 35000), # Não medido
-        "no_13": ("Escadaria entrada", "Escadaria biblioteca", 40000), # Não medido
-        "no_14": ("Hub", "Callidus", 17000), # Não medido
-        "no_15": ("Callidus", "FemtonLab", 6000), # Não medido
-        "no_16": ("Callidus", "Corredor Bloco D-1.3", 9000), # Não medido
-        "no_17": ("Callidus", "Quadra", 10000), # Não medido
-        "no_18": ("FemtonLab", "Quadra", 16000), # Não medido
-        "no_19": ("Corredor Bloco D-1.3", "Entrada lado da Quadra", 2000), # Não medido
-        "no_20": ("Corredor Bloco D-1.3", "Entrada lado do Campo", 9000), # Não medido
-        "no_21": ("FemtonLab", "Entrada lado da Quadra", 6000), # Não medido
-        "no_22": ("FemtonLab", "Entrada lado do Campo", 8000), # Não medido
-        "no_23": ("FemtonLab", "Urutau", 10000), # Não medido
-        "no_24": ("FemtonLab", "Corredor STEM-RU", 100000), # Não medido
-        "no_25": ("FemtonLab", "Corredor STEM-OCEAN", 105000), # Não medido
-        "no_26": ("Urutau", "Entrada lado da Quadra", 3000), # Não medido
-        "no_27": ("Ocean", "Corredor STEM-OCEAN", 2000), # Não medido
-        "no_28": ("Ocean", "Corredor STEM-RU", 3000), # Não medido
-        "no_29": ("Ocean", "Quadra", 5000), # Não medido
-        "no_30": ("Ocean", "Baja", 1000), # Não medido
-        "no_31": ("Ocean", "Escadaria biblioteca", 9000), # Não medido
-        "no_32": ("Ocean", "Corredor Bloco D-1.3", 5500), # Não medido
-        "no_33": ("Baja", "Escadaria biblioteca", 9010), # Não medido
-        "no_34": ("Baja", "Corredor STEM-OCEAN", 2200), # Não medido
-        "no_35": ("Baja", "Corredor STEM-RU", 3300), # Não medido
-        "no_36": ("Baja", "Entrada lado da Quadra", 4400), # Não medido
-        "no_37": ("Baja", "Entrada lado do Campo", 5500), # Não medido
-        "no_38": ("Baja", "Corredor Bloco D-1.3", 2200), # Não medido
-        "no_39": ("Quadra", "Entrada lado da Quadra", 4000), # Não medido
-        "no_40": ("Quadra", "Entrada lado do Campo", 10000), # Não medido
-        "no_41": ("Quadra", "Corredor Bloco D-1.3", 800), # Não medido
-        "no_42": ("Quadra", "Corredor STEM-RU", 1000), # Não medido
-        "no_43": ("Quadra", "Corredor STEM-OCEAN", 1200), # Não medido
+        "no_6": ("Corredor Daetec 1", "Entrada", 600), # medido MAPS
+        "no_7": ("Entrada", "Escadaria entrada", 9900), # medido MAPS
+        "no_8": ("Entrada", "Hub", 22500), # medido MAPS
+        "no_9": ("Entrada", "Escadaria biblioteca", 1500), # medido MAPS
+        "no_10": ("Entrada", "Callidus", 26900), # medido MAPS
+        "no_11": ("Entrada", "Corredor Bloco B-C-1.1", 460), # medido MAPS
+        "no_12": ("Escadaria entrada", "Hub", 22000), # medido MAPS
+        "no_13": ("Escadaria entrada", "Escadaria biblioteca", 10400), # medido MAPS
+        "no_14": ("Hub", "Callidus", 11500), # medido MAPS
+        "no_15": ("Callidus", "FemtonLab", 7300), # medido MAPS
+        "no_16": ("Callidus", "Corredor Bloco D-1.3", 10300), # medido MAPS
+        "no_17": ("Callidus", "Quadra", 12100), # medido MAPS
+        "no_18": ("FemtonLab", "Quadra", 17000), # medido MAPS
+        "no_19": ("Corredor Bloco D-1.3", "Entrada lado da Quadra", 7800), # medido MAPS
+        "no_20": ("Corredor Bloco D-1.3", "Entrada lado do Campo", 9200), # medido MAPS
+        "no_21": ("FemtonLab", "Entrada lado da Quadra", 12400), # medido MAPS
+        "no_22": ("FemtonLab", "Entrada lado do Campo", 4700), # medido MAPS
+        "no_23": ("FemtonLab", "Urutau", 12700), # medido MAPS
+        "no_24": ("FemtonLab", "Corredor STEM-RU", 16800), # medido MAPS
+        "no_25": ("FemtonLab", "Corredor STEM-OCEAN", 20100), # medido MAPS
+        "no_26": ("Urutau", "Entrada lado da Quadra", 3300), # medido MAPS
+        "no_27": ("Ocean", "Corredor STEM-OCEAN", 8900), # medido MAPS
+        "no_28": ("Ocean", "Corredor STEM-RU", 6100), # medido MAPS
+        "no_29": ("Ocean", "Quadra", 6200), # medido MAPS
+        "no_30": ("Ocean", "Baja", 1600), # medido MAPS
+        "no_31": ("Ocean", "Escadaria biblioteca", 9200), # medido MAPS
+        "no_32": ("Ocean", "Corredor Bloco D-1.3", 9400), # medido MAPS
+        "no_33": ("Baja", "Escadaria biblioteca", 9300), # medido MAPS
+        "no_34": ("Baja", "Corredor STEM-OCEAN", 4200), # medido MAPS
+        "no_35": ("Baja", "Corredor STEM-RU", 5700), # medido MAPS
+        "no_36": ("Baja", "Entrada lado da Quadra", 8800), # medido MAPS
+        "no_37": ("Baja", "Entrada lado do Campo", 14800), # medido MAPS
+        "no_38": ("Baja", "Corredor Bloco D-1.3", 9200), # medido MAPS
+        "no_39": ("Quadra", "Entrada lado da Quadra", 3200), # medido MAPS
+        "no_40": ("Quadra", "Entrada lado do Campo", 10600), # medido MAPS
+        "no_41": ("Quadra", "Corredor Bloco D-1.3", 4900), # medido MAPS
+        "no_42": ("Quadra", "Corredor STEM-RU", 7400), # medido MAPS
+        "no_43": ("Quadra", "Corredor STEM-OCEAN", 8400), # medido MAPS
         "no_44": ("Corredor Bloco D-1.3", "Corredor Bloco D-1.1", 1500), # Não medido
         "no_45": ("Corredor Bloco D-1.3", "Corredor Bloco D-1.2", 1500), # Não medido
         "no_46": ("Corredor Bloco D-1.2", "Corredor Bloco C-1.2", 3500),
