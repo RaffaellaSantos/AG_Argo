@@ -17,9 +17,9 @@ VERMELHO = 2  #dobro do peso
 TIPO_CONTAINER = {"vermelho": 2 * PESO_CONTAINER, "azul": PESO_CONTAINER}
 
 #DIMENSÕES DO BARCO
-LARGURA_BARCO = 17.0
+LARGURA_BARCO = 18.0
 COMP_BARCO = 60.0
-CENTRO_BARCO = 8.5
+
 
 PIER_NODE = "jambeiro"
 
@@ -43,7 +43,7 @@ DEMANDA_CAMPUS = {
         "Escadaria biblioteca",
         "Escadaria entrada",
         "FemtonLab",
-    ],
+    ]
 }
 
 BARCO_INICIAL = np.array(
