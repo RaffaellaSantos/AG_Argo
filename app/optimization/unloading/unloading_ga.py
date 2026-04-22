@@ -220,7 +220,7 @@ class Argo:
                     else " -> Deixado em Estoque"
                 )
                 print(
-                    f"[{tempo_guidaste:06.1f}] Guindaste (Passo {passo:02d}): Moveu container {cor} para o Pier (Y:{pier_y + 1} X:{pier_x + 1} Z;{largar_z + 1}) {tag}"
+                    f"[{tempo_guidaste:06.1f}] Guindaste (Passo {passo:02d}): Moveu container {cor} (Y:{barco_y + 1} X:{barco_x + 1} Z;{pegar_z + 1}) para o Pier (Y:{pier_y + 1} X:{pier_x + 1} Z;{largar_z + 1}) {tag}"
                 )
 
             while len(manager.pier_unassigned) >= 2:

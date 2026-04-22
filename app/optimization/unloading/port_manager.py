@@ -57,7 +57,7 @@ class PortManager:
         if self.log:
             destinos = [item["dest"] for item in trip_c]
             print(
-                f"[{t_start:06.1f}] Carrerista {c} saiu com {qtd} entregas para {destinos}"
+                f"[{t_start:06.1f}] Carrerista {c + 1} saiu com {qtd} entregas para {destinos}"
             )
 
         return True
