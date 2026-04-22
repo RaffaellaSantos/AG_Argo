@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import copy
+import math 
 
 from app.config import AZUL, DEMANDA_CAMPUS, VAZIO, VERMELHO
 from app.optimization.unloading.port_manager import PortManager
@@ -67,27 +68,58 @@ class Argo:
                 return -1
 
     def calcular_estabilidade(self, barco_aux: np.ndarray, peso_total_barco: float):
-        """Calcula o centro de massa e retorna a penalidade caso esteja instável."""
-        centro_massa_x=8.5
+        
+        PESO_VAZIO = 900.0   #peso do navio sem carga (ainda precisa ser confirmado)
+        L = 60.0             #comprimento da embarcação (cm)
+        B = 18.0             #largura da embarcação (cm)
+        KG0 = 10.62          #altura do centro de gravidade a partir da quilha (ainda precisa ser confirmado)   
+        rho = 1.0            #densidade água doce
+        delta_t = PESO_VAZIO + peso_total_barco  #peso atual (variação)
+
+        #Calado dinâmico (T)
+        T = delta_t / (L * B * rho)
+
+        KB = T / 2  #altura do centro de carena
+        BM = (B ** 2)/(12 * T)  #raio metacêntrico transversal (o 12 vem da inércia de um retângulo)
+        G0M = KB + BM - KG0     #altura metacêntrica inicial
+
+        pos_x = np.array([9.132, 22.932, 36.732, 46.932]) #posição ao longo do comprimento (centros de cada conteiner)
+        pos_y = np.array([2.26, 6.78, 11.30, 15.82])      #posições laterais (largura)
+        pos_z = np.array([2.1, 6.3, 10.5])                #pilhas de conteiners
+
+        centro_alvo_x = 30.0    #L/2
+        centro_alvo_y = 9.0     #18 cm / 2
 
         if peso_total_barco > 0:
-            pos_x = np.array([2.125, 6.375, 10.625, 14.875])
-            centro_barco = 8.5
+            pesos_x = np.sum(barco_aux, axis=(0, 1))     #peso total nas 4 "fatias" verticais do navio
+            pesos_y = np.sum(barco_aux, axis=(0,2))      #peso total de cada "corredor"
+            pesos_z = np.sum(barco_aux, axis = (1, 2))   #peso total de cada andar de conteiners
 
-            pesos_colunas = np.sum(barco_aux, axis=(0,1))
-            pesos_x = np.sum(barco_aux, axis=(0, 1))
+            cm_z = np.sum(pesos_z * pos_z)/peso_total_barco  #centro de gravidade vertical da carga
+            gm = G0M - cm_z                                  #nova altura metacêntrica
 
-            centro_massa_x = np.sum(pesos_colunas * pos_x) / peso_total_barco
+            momentos_y = np.sum(pesos_y * (pos_y - centro_alvo_y)) #soma de momentos em relação á linha de centro 
+            tan_theta = momentos_y / (delta_t * gm)                #fórmula da inclinação estática
+            list_graus = math.degrees(math.atan(tan_theta))        #converte inclinação de rad->graus
 
-            desvio = abs(centro_massa_x - centro_barco)
-            if desvio > 1.0: 
-                return desvio * 100.0, centro_massa_x
+            momentos_x = np.sum(pesos_x * (pos_x - centro_alvo_x))  #diferença de peso entre proa e popa
+            trim = (L * momentos_x) / (delta_t * gm)                #diferença de calado entre a frente e a trás
 
-        return 0.0, centro_massa_x
+            penalidade = 0.0
+
+            if gm<=0:
+                penalidade += 2000.0  #navio instável
+            
+            penalidade += abs(list_graus) * 100     #penaliza grandes inclinações
+            penalidade += abs(trim) * 50            #penaliza desnivelamento
+
+            return penalidade, {"GM": gm, "List": list_graus, "Trim": trim, "Gz": cm_z} #devolve o custo
+        
+        return 0.0, {"GM": G0M, "List": 0, "Trim": 0, "Gz": 0}
+
 
     def simular_descarregamento(self, cromossomo: np.ndarray, log: bool = False):
         """Simula o descarregamento de containers e o transporte dos mesmos"""
-
 
         barco_aux = copy.deepcopy(self.barco)
         pier_aux = copy.deepcopy(self.pier)
@@ -154,10 +186,10 @@ class Argo:
             movimento, posicao_garra = self.garra(posicao_garra, barco_y, barco_x)
             tempo_guidaste += movimento
             peso_total_barco -= tipo_buscado
-            custo_estabilidade, cm_atual = self.calcular_estabilidade(barco_aux, peso_total_barco)
+            custo_estabilidade, status_estabilidade = self.calcular_estabilidade(barco_aux, peso_total_barco)
 
             penalidade+= custo_estabilidade
-            historico_cm.append(cm_atual)
+            historico_cm.append(status_estabilidade)
 
             movimento, posicao_garra = self.garra(posicao_garra, pier_y, pier_x)
             tempo_chegada_pier = tempo_guidaste + movimento

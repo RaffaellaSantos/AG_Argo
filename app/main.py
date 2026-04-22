@@ -31,14 +31,14 @@ def main():
         melhor_hist, media_hist, melhor_individuo = argo_ag.inicializar_otimizacao()
         grafico_evolucao(melhor_hist, media_hist)
         
-        restantes, makespan, penalidade, lista_cm = argo_ag.simular_descarregamento(melhor_individuo)
-        grafico_estabilidade(lista_cm)
+        restantes, makespan, penalidade, lista_estabilidade = argo_ag.simular_descarregamento(melhor_individuo, log=True)
+        grafico_estabilidade(lista_estabilidade)
 
         print("Calculando Fronteira de Pareto")
         lista_makespans = []
         lista_penalidades = []
 
-        for ind in argo_ag.populacao[:50]:
+        for ind in argo_ag.populacao[:100]:
             _, mk, pen, _ = argo_ag.simular_descarregamento(ind)
             lista_makespans.append(mk)
             lista_penalidades.append(pen)
