@@ -73,13 +73,37 @@ def fronteira_de_pareto(makespans, instabilidades, filename="pareto_argo.png"):
     pontos = sorted(list(zip(makespans, instabilidades)))
     pareto_front = []
     min_instabilidade = float("inf")
+    
     for m, i in pontos:
         if i < min_instabilidade:
             pareto_front.append((m, i))
             min_instabilidade = i
 
+    if not pareto_front:
+        return
+
     pareto_makespans = [p[0] for p in pareto_front]
     pareto_instabilidades = [p[1] for p in pareto_front]
+
+    # --- 1. CÁLCULO DO MELHOR PONTO (PONTO DE COTOVELO) ---
+    min_m, max_m = min(pareto_makespans), max(pareto_makespans)
+    min_i, max_i = min(pareto_instabilidades), max(pareto_instabilidades)
+
+    melhor_distancia = float("inf")
+    melhor_ponto = pareto_front[0]
+
+    for m, i in pareto_front:
+        # Normaliza os valores (de 0.0 a 1.0) para que a escala não distorça o cálculo
+        norm_m = (m - min_m) / (max_m - min_m) if max_m != min_m else 0
+        norm_i = (i - min_i) / (max_i - min_i) if max_i != min_i else 0
+        
+        # Distância Euclidiana até a origem ideal (0, 0)
+        distancia = (norm_m ** 2 + norm_i ** 2) ** 0.5
+        
+        if distancia < melhor_distancia:
+            melhor_distancia = distancia
+            melhor_ponto = (m, i)
+    # ------------------------------------------------------
 
     plt.figure(figsize=(10, 6))
 
@@ -97,11 +121,33 @@ def fronteira_de_pareto(makespans, instabilidades, filename="pareto_argo.png"):
     )
     plt.plot(pareto_makespans, pareto_instabilidades, "ro")
 
+    # --- 2. DESENHO DO MARCADOR DO MELHOR PONTO ---
+    plt.plot(
+        melhor_ponto[0], melhor_ponto[1], 
+        marker="*", color="gold", markersize=18, 
+        markeredgecolor="black", zorder=5, label="Melhor Trade-off (Cotovelo)"
+    )
+
+    # Caixa de texto com uma seta apontando para a estrela
+    plt.annotate(
+        f'Melhor Escolha\nTempo: {melhor_ponto[0]:.1f}\nPenalidade: {melhor_ponto[1]:.0f}',
+        xy=(melhor_ponto[0], melhor_ponto[1]),
+        xytext=(15, 25), # Move o texto um pouco para a direita e para cima
+        textcoords="offset points",
+        arrowprops=dict(facecolor='black', shrink=0.05, width=1.5, headwidth=7),
+        fontsize=10,
+        fontweight='bold',
+        bbox=dict(boxstyle="round,pad=0.4", fc="#fff9c4", ec="black", alpha=0.9),
+        zorder=10
+    )
+    # ----------------------------------------------
+
     plt.title("Fronteira de Pareto: Tempo (Makespan) vs Instabilidade")
     plt.xlabel("Tempo Total")
     plt.ylabel("Penalidade de Estabilidade Total")
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.legend()
+    
     pareto_validos = [p for p in pareto_instabilidades if p < 50000]
 
     if pareto_validos:
