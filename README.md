@@ -73,18 +73,28 @@ Ao final da execução bem-sucedida, o console exibirá:
 - O número de contêineres restantes no barco (objetivo: 0).
 
 <p align="center">
-  <img src="estabilidade_final.png" width="500"><br>
-  <em>Figura 1 - Estabilidade final do barco</em>
+  <img src="outputs/graficos/rotas_carreristas.gif" width="500"><br>
+  <em>Figura 1 - Grafo de entrega</em>
 </p>
 
 <p align="center">
-  <img src="evolucao_ag.png" width="500"><br>
-  <em>Figura 2 - Evolução dos indivíduos</em>
+  <img src="outputs/graficos/descarregamento_matriz.gif" width="500"><br>
+  <em>Figura 2 - Descarregamento</em>
 </p>
 
 <p align="center">
-  <img src="pareto_argo.png" width="500"><br>
-  <em>Figura 3 - Fronteira de Pareto</em>
+  <img src="outputs/graficos/estabilidade_naval_final.png" width="500"><br>
+  <em>Figura 3 - Estabilidade naval final do barco</em>
+</p>
+
+<p align="center">
+  <img src="outputs/graficos/evolucao_ag.png" width="500"><br>
+  <em>Figura 4 - Evolução dos indivíduos</em>
+</p>
+
+<p align="center">
+  <img src="outputs/graficos/pareto_argo.png" width="500"><br>
+  <em>Figura 5 - Fronteira de Pareto</em>
 </p>
 
 ## 6. Referências

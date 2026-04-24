@@ -36,6 +36,11 @@ Referência: [Algoritmos genéticos aplicados ao problema de roteamento de veíc
 
     - Matriz de Distâncias: O uso do algoritmo de Floyd-Warshall (nx.floyd_warshall_numpy) para converter o grafo em uma matriz de tempos de viagem é uma técnica clássica de pesquisa operacional mencionada para otimizar trajetos de carreristas (AGVs ou caminhões).
 
+<p align="center">
+  <img src="../outputs/graficos/rotas_carreristas.gif" width="500"><br>
+  <em>Figura 1 - Grafo de entrega</em>
+</p>
+
 ### Integração do Sistema
 
 Referência: [Uma abordagem de resolução integrada para os problemas de roteirização e carregamento de veículos](https://lume.ufrgs.br/handle/10183/25871)
@@ -50,21 +55,26 @@ Referência: [Uma abordagem de resolução integrada para os problemas de roteir
 
     - Makespan Total: O objetivo final do algoritmo, assim como na dissertação, é minimizar o _makespan_total_, que é o tempo decorrido desde o primeiro movimento do guindaste até a última entrega feita pelos carreristas.
 
+<p align="center">
+  <img src="../outputs/graficos/descarregamento_matriz.gif" width="500"><br>
+  <em>Figura 2 - Descarregamento</em>
+</p>
+
 ### Resultados visuais do AG
 
 -> Essa parte foi feita por [Luana](https://github.com/luanacrdoso)
 
 <p align="center">
-  <img src="../estabilidade_final.png" width="500"><br>
-  <em>Figura 1 - Estabilidade final do barco</em>
+  <img src="../outputs/graficos/estabilidade_naval_final.png" width="500"><br>
+  <em>Figura 3 - Estabilidade naval final do barco</em>
 </p>
 
 <p align="center">
-  <img src="../evolucao_ag.png" width="500"><br>
-  <em>Figura 2 - Evolução dos indivíduos</em>
+  <img src="../outputs/graficos/evolucao_ag.png" width="500"><br>
+  <em>Figura 4 - Evolução dos indivíduos</em>
 </p>
 
 <p align="center">
-  <img src="../pareto_argo.png" width="500"><br>
-  <em>Figura 3 - Fronteira de Pareto</em>
+  <img src="../outputs/graficos/pareto_argo.png" width="500"><br>
+  <em>Figura 5 - Fronteira de Pareto</em>
 </p>

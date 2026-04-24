@@ -119,6 +119,7 @@ def create_campus_graph():
         "no_65": ("Corredor B-1.1", "Corredor B-1.2", 1487),
         "no_66": ("Corredor B-1.2", "Corredor Transicao B->C", 1500),
         "no_67": ("Corredor Bloco A-B-1.3", "Sala A18", 1500),
+        "no_68": ("jambeiro", "jambeiro Saída 2", 464)
     }
 
     G.add_nodes_from(destinos.keys())
