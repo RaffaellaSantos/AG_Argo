@@ -3,20 +3,23 @@ import numpy as np
 NUM_INDIVIDUOS = 100
 MARGEM_ERRO = 50
 NUM_CONTAINERS = 24
-NUM_GERACOES = 401
+NUM_GERACOES = 400
 
 NUM_CARRERISTAS = 3
 CAPACIDADE_MAX = 2
+VELOCIDADE_CARRERISTA_CM_S = 150.0  # 1,5 m/s
 
 PESO_CONTAINER = 57.0
+LARGURA_CONTAINER_CM = 4
+VELOCIDADE_GARRA_CM_S = 50
 
 VAZIO = 0
-AZUL = 1      #leve
-VERMELHO = 2  #dobro do peso 
+AMARELO = 1  # leve
+ROSA = 2  # dobro do peso
 
-TIPO_CONTAINER = {"vermelho": 2 * PESO_CONTAINER, "azul": PESO_CONTAINER}
+TIPO_CONTAINER = {"rosa": ROSA * PESO_CONTAINER, "amarelo": PESO_CONTAINER}
 
-#DIMENSÕES DO BARCO
+# DIMENSÕES DO BARCO
 LARGURA_BARCO = 18.0
 COMP_BARCO = 60.0
 
@@ -24,7 +27,7 @@ COMP_BARCO = 60.0
 PIER_NODE = "jambeiro"
 
 DEMANDA_CAMPUS = {
-    AZUL: [
+    AMARELO: [
         "Quadra",
         "Sala A4",
         "Urutau",
@@ -32,7 +35,7 @@ DEMANDA_CAMPUS = {
         "Ocean",
         "Hub",
     ],
-    VERMELHO: [
+    ROSA: [
         "Urutau",
         "Baja",
         "Ocean",
@@ -43,27 +46,27 @@ DEMANDA_CAMPUS = {
         "Escadaria biblioteca",
         "Escadaria entrada",
         "FemtonLab",
-    ]
+    ],
 }
 
 BARCO_INICIAL = np.array(
     [
         [  # Primeiro andar
-            [VERMELHO, VAZIO, VERMELHO, VAZIO],
-            [VERMELHO, VERMELHO, VERMELHO, AZUL],
-            [VERMELHO, VERMELHO, AZUL, VERMELHO],
-            [VAZIO, VAZIO, VAZIO, VERMELHO],
+            [ROSA, VAZIO, ROSA, VAZIO],
+            [ROSA, ROSA, ROSA, AMARELO],
+            [ROSA, ROSA, AMARELO, ROSA],
+            [VAZIO, VAZIO, VAZIO, ROSA],
         ],
         [  # Segundo andar
-            [VAZIO, VAZIO, AZUL, VAZIO],
-            [VERMELHO, VERMELHO, AZUL, AZUL],
-            [AZUL, AZUL, AZUL, AZUL],
-            [VAZIO, VAZIO, VAZIO, AZUL],
+            [VAZIO, VAZIO, AMARELO, VAZIO],
+            [ROSA, ROSA, AMARELO, AMARELO],
+            [AMARELO, AMARELO, AMARELO, AMARELO],
+            [VAZIO, VAZIO, VAZIO, AMARELO],
         ],
         [  # Terceiro andar
             [VAZIO, VAZIO, VAZIO, VAZIO],
-            [VAZIO, VERMELHO, AZUL, VAZIO],
-            [VAZIO, VAZIO, AZUL, VAZIO],
+            [VAZIO, ROSA, AMARELO, VAZIO],
+            [VAZIO, VAZIO, AMARELO, VAZIO],
             [VAZIO, VAZIO, VAZIO, VAZIO],
         ],
     ]

@@ -3,13 +3,14 @@ import random
 import copy
 import math 
 
-from app.config import AZUL, DEMANDA_CAMPUS, VAZIO, VERMELHO
+from app.config import AMARELO, DEMANDA_CAMPUS, LARGURA_CONTAINER_CM, ROSA, VAZIO, VELOCIDADE_GARRA_CM_S
 from app.optimization.unloading.port_manager import PortManager
 
 
 class Argo:
     def __init__(
         self,
+        file: any,
         barco: list,
         travel_model,
         num_carriers: int,
@@ -34,7 +35,10 @@ class Argo:
         # Variáveis para armazenar o histórico
         self.historico_melhor_individuo = []
         self.historico_media = []
+        self.historico_solucoes = []
+        self.historico_melhor_cromossomo = []
         self.pier = np.zeros((2, 2, 2))
+        self.file = file
 
         if semente_individuo is not None:
             self.populacao[0] = copy.deepcopy(semente_individuo)
@@ -124,10 +128,28 @@ class Argo:
         barco_aux = copy.deepcopy(self.barco)
         pier_aux = copy.deepcopy(self.pier)
         historico_cm = []
+        historico_rotas = []
+
+        barco_ids = np.zeros_like(barco_aux, dtype=int)
+        pier_ids = np.zeros_like(pier_aux, dtype=int)
+        cid = 1
+        for z in range(barco_aux.shape[0]):
+            for y in range(barco_aux.shape[1]):
+                for x in range(barco_aux.shape[2]):
+                    if barco_aux[z,y,x] != VAZIO:
+                        barco_ids[z,y,x] = cid
+                        cid += 1
+
+        historico_eventos = []
+        historico_eventos.append({
+            'tipo': 'init',
+            'barco': copy.deepcopy(barco_aux), 'pier': copy.deepcopy(pier_aux),
+            'barco_ids': copy.deepcopy(barco_ids), 'pier_ids': copy.deepcopy(pier_ids)
+        })
 
         demandas_restantes = {
-            AZUL: copy.deepcopy(DEMANDA_CAMPUS[AZUL]),
-            VERMELHO: copy.deepcopy(DEMANDA_CAMPUS[VERMELHO]),
+            AMARELO: copy.deepcopy(DEMANDA_CAMPUS[AMARELO]),
+            ROSA: copy.deepcopy(DEMANDA_CAMPUS[ROSA]),
         }
 
         tempo_guidaste = 0.0
@@ -135,12 +157,26 @@ class Argo:
         posicao_garra = (0, 0)
         peso_total_barco = int(np.sum(barco_aux))
 
-        manager = PortManager(self.num_carriers, self.travel_model, pier_aux, log)
+        manager = PortManager(self.file, self.num_carriers, self.travel_model, pier_aux, pier_ids, log)
+
+        def registrar_eventos_despacho():
+            for desp in manager.eventos_despacho:
+                historico_eventos.append({
+                    'tipo': 'dispatch', 'id': desp['id'], 'color': desp['color'], 'from': desp['slot'],
+                    'barco': copy.deepcopy(barco_aux), 'pier': copy.deepcopy(pier_aux),
+                    'barco_ids': copy.deepcopy(barco_ids), 'pier_ids': copy.deepcopy(pier_ids)
+                })
+            manager.eventos_despacho.clear()
 
         if log:
             print("\n" + "=" * 50)
             print("SIMULAÇÃO DE EVENTOS: DESCARREGAMENTO & ROTAS")
             print("=" * 50)
+            header = (
+                "<h1 style='text-align: center; color: #1a237e;'>Relatório Passo a Passo: Operação Argo</h1>"
+                "<hr/><h2 style='color: #0d47a1;'>1. Log de Movimentações</h2>"
+            )
+            self.file.write(header + "\n")
 
         for i, acao in enumerate(cromossomo):
             if np.count_nonzero(barco_aux) == 0:
@@ -171,6 +207,9 @@ class Argo:
 
             # Verifica o tipo de container e associa o destino
             tipo_buscado = barco_aux[pegar_z, barco_y, barco_x]
+            container_id = barco_ids[pegar_z, barco_y, barco_x]
+            barco_aux[pegar_z, barco_y, barco_x] = VAZIO
+            barco_ids[pegar_z, barco_y, barco_x] = 0
 
             is_stock = False
 
@@ -184,17 +223,18 @@ class Argo:
             barco_aux[pegar_z, barco_y, barco_x] = VAZIO
 
             movimento, posicao_garra = self.garra(posicao_garra, barco_y, barco_x)
-            tempo_guidaste += movimento
+            tempo_guidaste += (movimento * LARGURA_CONTAINER_CM) / VELOCIDADE_GARRA_CM_S
             peso_total_barco -= tipo_buscado
             custo_estabilidade, status_estabilidade = self.calcular_estabilidade(barco_aux, peso_total_barco)
 
-            penalidade+= custo_estabilidade
+            penalidade += custo_estabilidade
             historico_cm.append(status_estabilidade)
 
             movimento, posicao_garra = self.garra(posicao_garra, pier_y, pier_x)
             tempo_chegada_pier = tempo_guidaste + movimento
 
             manager.limpar_pier(tempo_chegada_pier)
+            registrar_eventos_despacho()
 
             largar_z = self.verificar_container_abaixo(
                 pier_aux, pier_y, pier_x, "largar"
@@ -218,8 +258,8 @@ class Argo:
                 )
 
             if largar_z == -1:
-                faltam_entregas = len(demandas_restantes[AZUL]) + len(
-                    demandas_restantes[VERMELHO]
+                faltam_entregas = len(demandas_restantes[AMARELO]) + len(
+                    demandas_restantes[ROSA]
                 )
                 if faltam_entregas > 0:
                     penalidade += 100000.0
@@ -227,6 +267,7 @@ class Argo:
                     penalidade += 500.0
 
                 barco_aux[pegar_z, barco_y, barco_x] = tipo_buscado
+                barco_ids[pegar_z, barco_y, barco_x] = container_id
                 peso_total_barco += tipo_buscado
                 if not is_stock:
                     demandas_restantes[tipo_buscado].append(destino_final)
@@ -234,6 +275,14 @@ class Argo:
 
             tempo_guidaste = tempo_chegada_pier
             pier_aux[largar_z, pier_y, pier_x] = tipo_buscado
+            pier_ids[largar_z, pier_y, pier_x] = container_id
+
+            historico_eventos.append({
+                'tipo': 'move_to_pier', 'id': container_id, 'color': tipo_buscado,
+                'from': (pegar_z, barco_y, barco_x), 'to': (largar_z, pier_y, pier_x),
+                'barco': copy.deepcopy(barco_aux), 'pier': copy.deepcopy(pier_aux),
+                'barco_ids': copy.deepcopy(barco_ids), 'pier_ids': copy.deepcopy(pier_ids)
+            })
 
             if not is_stock:
                 manager.pier_unassigned.append(
@@ -243,17 +292,34 @@ class Argo:
                         "slot": (largar_z, pier_y, pier_x),
                     }
                 )
+                historico_rotas.append(destino_final)
 
             if log:
-                cor = "Vermelho" if tipo_buscado == VERMELHO else "Azul"
+                cor_nome = "Rosa" if tipo_buscado == ROSA else "Amarelo"
                 tag = (
                     f" -> Entregar em {destino_final}"
                     if not is_stock
                     else " -> Deixado em Estoque"
                 )
                 print(
-                    f"[{tempo_guidaste:06.1f}] Guindaste (Passo {passo:02d}): Moveu container {cor} (Y:{barco_y + 1} X:{barco_x + 1} Z;{pegar_z + 1}) para o Pier (Y:{pier_y + 1} X:{pier_x + 1} Z;{largar_z + 1}) {tag}"
+                    f"[{tempo_guidaste:06.1f}] Guindaste (Passo {passo:02d}): Moveu container {cor_nome} (Y:{barco_y + 1} X:{barco_x + 1} Z;{pegar_z + 1}) para o Pier (Y:{pier_y + 1} X:{pier_x + 1} Z;{largar_z + 1}) {tag}"
                 )
+                cor_style = "#b81466" if tipo_buscado == ROSA else "#b8b814"
+                tag_html = f"<b style='color: green;'>📍 Destino: {destino_final}</b>" if not is_stock else "<b style='color: red;'>📦 Estoque</b>"
+                
+                log_guindaste = (
+                    f"<div style='background: #f5f5f5; padding: 8px; margin: 5px 0; border-radius: 4px; color:#111;'>"
+                    f"<b>[{tempo_guidaste:06.1f}] 🏗️ Guindaste (Passo {passo:02d})</b><br/>"
+                    f"Moveu container <span style='color: {cor_style};'>{cor_nome}</span> "
+                    f"de Navio "
+                    f"<b style='font-size:1.1em; color:#111; background:#e0e0e0; padding:2px 6px; border-radius:4px;'>"
+                    f"(Y:{barco_y+1} X:{barco_x+1} Z:{pegar_z+1})</b> para "
+                    f"Píer "
+                    f"<b style='font-size:1.1em; color:#111; background:#e0e0e0; padding:2px 6px; border-radius:4px;'>"
+                    f"(Y:{pier_y+1} X:{pier_x+1} Z:{largar_z+1})</b> "
+                    f"| {tag_html}</div>"
+                )
+                self.file.write(log_guindaste + "\n")
 
             while len(manager.pier_unassigned) >= 2:
                 manager.despachar_caminhao()
@@ -261,8 +327,11 @@ class Argo:
         while len(manager.pier_unassigned) > 0:
             manager.despachar_caminhao(forcar_um=True)
 
-        makespan_total = max(manager.tempo_maximo_frota(), tempo_guidaste)
-        manager.limpar_pier(makespan_total + 1.0)
+        tempo_ultima_entrega = max(manager.historico_entregas, default=0.0)
+
+        makespan_total = max(tempo_guidaste, tempo_ultima_entrega)
+        manager.limpar_pier(manager.tempo_maximo_frota() + 1.0)
+        registrar_eventos_despacho()
 
         containers_restantes = np.count_nonzero(barco_aux)
         penalidade += (
@@ -278,8 +347,34 @@ class Argo:
             estoque_final = np.count_nonzero(pier_aux)
             print(f"CONTAINERS DEIXADOS NO PÍER (Estoque): {estoque_final}")
             print("=" * 50 + "\n")
+            
+            estoque_final = np.count_nonzero(pier_aux)
+            relatorio_final = f"""
+<div style='margin-top: 30px; padding: 20px; border: 2px solid #1a237e; border-radius: 8px;'>
+    <h2 style='color: #1a237e; margin-top: 0;'>2. Resumo da Solução Otimizada</h2>
+    <table style='width: 100%; border-collapse: collapse;'>
+        <tr style='background: #e8eaf6;'>
+            <th style='text-align: left; padding: 10px; border-bottom: 1px solid #ccc;'>Indicador</th>
+            <th style='text-align: left; padding: 10px; border-bottom: 1px solid #ccc;'>Valor</th>
+        </tr>
+        <tr>
+            <td style='padding: 10px; border-bottom: 1px solid #eee;'>Makespan Total</td>
+            <td style='padding: 10px; border-bottom: 1px solid #eee;'><b>{makespan_total:.1f} unidades</b></td>
+        </tr>
+        <tr>
+            <td style='padding: 10px; border-bottom: 1px solid #eee;'>Containers no Barco</td>
+            <td style='padding: 10px; border-bottom: 1px solid #eee;'><b>{containers_restantes}</b></td>
+        </tr>
+        <tr>
+            <td style='padding: 10px;'>Estoque no Píer</td>
+            <td style='padding: 10px;'><b>{estoque_final}</b></td>
+        </tr>
+    </table>
+</div>
+            """
+            self.file.write(relatorio_final)
 
-        return containers_restantes, makespan_total, penalidade, historico_cm
+        return containers_restantes, makespan_total, penalidade, historico_cm, historico_eventos, historico_rotas
 
     def funcao_fitness(self, cromossomo: np.ndarray):
         """
@@ -287,7 +382,9 @@ class Argo:
         No entanto, recompensa menor custo na distância percorrida.
         """
 
-        restantes, makespan, penalidade, _ = self.simular_descarregamento(cromossomo, log=False)
+        restantes, makespan, penalidade, _, _, _ = self.simular_descarregamento(cromossomo, log=False)
+
+        self.historico_solucoes.append((makespan, penalidade))
 
         if restantes > 0:
             fator_falha = 1000000.0 * (restantes ** 2)
@@ -318,10 +415,11 @@ class Argo:
             melhor_fitness = fitnesses[melhor_idx]
             melhor_individuo = self.populacao[melhor_idx].copy()
 
-            print(f"Geração {gen} | Melhor Fitness: {melhor_fitness:.4f}")
+            print(f"Geração {gen + 1} | Melhor Fitness: {melhor_fitness:.4f}")
 
             self.historico_melhor_individuo.append(melhor_fitness)
             self.historico_media.append(float(np.mean(fitnesses)))
+            self.historico_melhor_cromossomo.append(melhor_individuo.copy())
 
             nova_população = []
             nova_população.append(melhor_individuo)  # Elitismo
@@ -341,7 +439,7 @@ class Argo:
                     nova_população.append(ultimogênito)
             self.populacao = nova_população
 
-        return self.historico_melhor_individuo, self.historico_media, self.populacao[0]
+        return self.historico_melhor_individuo, self.historico_media, self.populacao[0], self.historico_melhor_cromossomo
 
     def torneio(self, fitnesses: list[float], num_competidores: int = 3):
         """Seleciona por torneio. Minimizar perda de diversidade"""
@@ -374,4 +472,6 @@ class Argo:
 
     def passo_a_passo(self, melhor_cromossomo: np.ndarray):
         """Imprime o passo a passo do melhor resultado"""
+
         self.simular_descarregamento(melhor_cromossomo, log=True)
+
