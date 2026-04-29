@@ -79,6 +79,7 @@ def main():
                 restantes,
                 makespan,
                 penalidade,
+                instabilidade_pura,
                 lista_estabilidade,
                 historico_eventos,
                 hist_rotas,
@@ -90,13 +91,15 @@ def main():
 
             print("Calculando Fronteira de Pareto")
             lista_makespans = []
-            lista_penalidades = []
+            lista_instabilidades = []
+            lista_restantes = []
 
-            for mk, pen in argo_ag.historico_solucoes:
+            for mk, inst, rest in argo_ag.historico_solucoes:
                 lista_makespans.append(mk)
-                lista_penalidades.append(pen)
+                lista_instabilidades.append(inst)
+                lista_restantes.append(rest)
 
-            fronteira_de_pareto(lista_makespans, lista_penalidades, filename=os.path.join(graph_path, 'pareto_argo.png'))
+            fronteira_de_pareto(lista_makespans, lista_instabilidades, lista_restantes, filename=os.path.join(graph_path, 'pareto_argo.png'))
 
             print("Gerando GIFs Analíticos...")
             grafico_gif_descarregamento(

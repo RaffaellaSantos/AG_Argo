@@ -30,10 +30,10 @@ def grafico_estabilidade(
     list_graus = [d["List"] for d in historico_estabilidade]
     list_trim = [d["Trim"] for d in historico_estabilidade]
     passos = range(1, len(historico_estabilidade) + 1)
-
+ 
     # Cria uma figura com 3 subplots (3 linhas, 1 coluna)
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 12), sharex=True)
-
+ 
     # 1. Gráfico de GM (Altura Metacêntrica) - Estabilidade Vertical
     ax1.plot(
         passos, list_gm, color="blue", marker="s", label="GM (Altura Metacêntrica)"
@@ -43,14 +43,14 @@ def grafico_estabilidade(
     ax1.set_title("Estabilidade Naval durante o Descarregamento")
     ax1.legend(loc="upper right")
     ax1.grid(True, alpha=0.3)
-
+ 
     # 2. Gráfico de Banda (List) - Inclinação Lateral (Eixo Y)
     ax2.plot(passos, list_graus, color="green", marker="o", label="Banda (List)")
     ax2.axhspan(-5, 5, color="green", alpha=0.1, label="Zona Segura (±5°)")
     ax2.set_ylabel("Inclinação (°)")
     ax2.legend(loc="upper right")
     ax2.grid(True, alpha=0.3)
-
+ 
     # 3. Gráfico de Trim - Inclinação Longitudinal (Eixo X)
     ax3.plot(
         passos,
@@ -63,99 +63,145 @@ def grafico_estabilidade(
     ax3.set_ylabel("Diferença (m)")
     ax3.legend(loc="upper right")
     ax3.grid(True, alpha=0.3)
-
+ 
     plt.tight_layout()
     plt.savefig(filename)
     plt.show()
 
 
-def fronteira_de_pareto(makespans, instabilidades, filename="pareto_argo.png"):
-    pontos = sorted(list(zip(makespans, instabilidades)))
-    pareto_front = []
-    min_instabilidade = float("inf")
-    
-    for m, i in pontos:
-        if i < min_instabilidade:
-            pareto_front.append((m, i))
-            min_instabilidade = i
 
-    if not pareto_front:
+def fronteira_de_pareto(makespans, instabilidades, restantes, filename="pareto_argo.png"):
+    """
+    Plota a fronteira de Pareto real: Makespan vs Instabilidade Naval Pura.
+ 
+    Recebe três listas paralelas vindas de historico_solucoes:
+      - makespans: tempo total da operação
+      - instabilidades: custo de estabilidade acumulado (só custo naval, sem penalidades de falha)
+      - restantes: containers que sobraram no barco (0 = solução válida)
+ 
+    Só soluções com restantes == 0 entram na fronteira de Pareto.
+    """
+    from scipy.interpolate import PchipInterpolator
+ 
+    # --- Separação válidas / inválidas ---
+    validas   = [(m, i) for m, i, r in zip(makespans, instabilidades, restantes) if r == 0]
+    invalidas = [(m, i) for m, i, r in zip(makespans, instabilidades, restantes) if r > 0]
+ 
+    fig, ax = plt.subplots(figsize=(12, 7))
+    fig.patch.set_facecolor("#f8f9fa")
+    ax.set_facecolor("#f8f9fa")
+ 
+    if not validas:
+        ax.set_title("Fronteira de Pareto — nenhuma solução válida ainda")
+        ax.set_xlabel("Makespan (tempo total)"); ax.set_ylabel("Instabilidade Naval Acumulada")
+        plt.tight_layout(); plt.savefig(filename, dpi=150); plt.close()
         return
-
-    pareto_makespans = [p[0] for p in pareto_front]
-    pareto_instabilidades = [p[1] for p in pareto_front]
-
-    # --- 1. CÁLCULO DO MELHOR PONTO (PONTO DE COTOVELO) ---
-    min_m, max_m = min(pareto_makespans), max(pareto_makespans)
-    min_i, max_i = min(pareto_instabilidades), max(pareto_instabilidades)
-
-    melhor_distancia = float("inf")
-    melhor_ponto = pareto_front[0]
-
-    for m, i in pareto_front:
-        # Normaliza os valores (de 0.0 a 1.0) para que a escala não distorça o cálculo
-        norm_m = (m - min_m) / (max_m - min_m) if max_m != min_m else 0
-        norm_i = (i - min_i) / (max_i - min_i) if max_i != min_i else 0
-        
-        # Distância Euclidiana até a origem ideal (0, 0)
-        distancia = (norm_m ** 2 + norm_i ** 2) ** 0.5
-        
-        if distancia < melhor_distancia:
-            melhor_distancia = distancia
-            melhor_ponto = (m, i)
-    # ------------------------------------------------------
-
-    plt.figure(figsize=(10, 6))
-
-    plt.scatter(
-        makespans, instabilidades, c="blue", alpha=0.3, label="Soluções Testadas"
+ 
+    all_i_validas = [p[1] for p in validas]
+    all_m_validas = [p[0] for p in validas]
+ 
+    # Limita Y ao percentil 98 para não deixar outliers distorcerem a escala
+    top_y = np.percentile(all_i_validas, 98) * 1.25
+    top_y = max(top_y, 200)
+    x_ini = min(all_m_validas) * 0.997
+    x_fim = max(all_m_validas) * 1.003
+ 
+    # --- Scatter das inválidas: cinza, pequenas, no fundo ---
+    if invalidas:
+        inv_m = [p[0] for p in invalidas]
+        inv_i = [min(p[1], top_y * 0.95) for p in invalidas]  # comprime no topo se > ylim
+        ax.scatter(inv_m, inv_i, c="#bbbbbb", alpha=0.2, s=6, zorder=1,
+                   label=f"Barco não esvaziado (n={len(invalidas)})")
+ 
+    # --- Scatter das válidas: colorido por densidade ---
+    # Usa hexbin como mapa de calor para mostrar onde as soluções se concentram
+    val_m = np.array(all_m_validas)
+    val_i = np.array(all_i_validas)
+    # Filtra para o ylim antes do hexbin
+    mask = val_i <= top_y
+    hb = ax.hexbin(val_m[mask], val_i[mask], gridsize=55, cmap="Blues",
+                   mincnt=1, alpha=0.75, zorder=2, linewidths=0.2)
+    cb = fig.colorbar(hb, ax=ax, pad=0.01, shrink=0.85)
+    cb.set_label("Densidade de soluções", fontsize=9)
+ 
+    # --- Fronteira de Pareto ---
+    pareto = []
+    min_i = float("inf")
+    for m, i in sorted(validas):
+        if i < min_i:
+            pareto.append((m, i))
+            min_i = i
+ 
+    pm = [p[0] for p in pareto]
+    pi = [p[1] for p in pareto]
+ 
+    # Curva suave Pchip sobre os pontos da fronteira
+    if len(pm) >= 4:
+        xs = np.linspace(pm[0], x_fim, 800)
+        pchip = PchipInterpolator(pm + [x_fim], pi + [pi[-1]])
+        ys = np.clip(pchip(xs), pi[-1], pi[0])
+        # Sombra da curva (efeito glow)
+        for lw, alpha in [(10, 0.08), (6, 0.12), (3.5, 0.2)]:
+            ax.plot(xs, ys, color="#FF1744", linewidth=lw, alpha=alpha, zorder=7)
+        ax.plot(xs, ys, color="#FF1744", linewidth=2.0, zorder=8, label="Fronteira de Pareto")
+    else:
+        ax.step(pm + [x_fim], pi + [pi[-1]], where="post",
+                color="#FF1744", linewidth=2.5, zorder=8, label="Fronteira de Pareto")
+ 
+    # Pontos exatos da fronteira
+    ax.scatter(pm, pi, color="white", s=40, zorder=9, edgecolors="#FF1744", linewidths=1.5)
+ 
+    # --- Cotovelo ---
+    mn_m, mx_m = pm[0], pm[-1]
+    mn_i, mx_i = pi[-1], pi[0]
+    melhor_dist = float("inf")
+    melhor = pareto[0]
+    for m, i in pareto:
+        nm = (m - mn_m) / (mx_m - mn_m) if mx_m != mn_m else 0
+        ni = (i - mn_i) / (mx_i - mn_i) if mx_i != mn_i else 0
+        if (nm**2 + ni**2) ** 0.5 < melhor_dist:
+            melhor_dist = (nm**2 + ni**2) ** 0.5
+            melhor = (m, i)
+ 
+    # Zona de destaque ao redor do cotovelo
+    circ = plt.Circle((melhor[0], melhor[1]), radius=(x_fim - x_ini) * 0.025,
+                       color="gold", alpha=0.25, zorder=10)
+    ax.add_patch(circ)
+ 
+    ax.plot(melhor[0], melhor[1], marker="*", color="gold", markersize=24,
+            markeredgecolor="#333", markeredgewidth=0.8, zorder=11,
+            label="Melhor Trade-off (Cotovelo)")
+ 
+    # Linhas de referência do cotovelo
+    ax.axvline(melhor[0], color="#FFA000", linestyle=":", linewidth=1.4, alpha=0.8, zorder=6)
+    ax.axhline(melhor[1], color="#FFA000", linestyle=":", linewidth=1.4, alpha=0.8, zorder=6)
+ 
+    # Posição inteligente da anotação: evita sair do gráfico
+    txt_offset_x = 35 if melhor[0] < (x_ini + x_fim) / 2 else -140
+    txt_offset_y = 40 if melhor[1] < top_y * 0.7 else -60
+    ax.annotate(
+        f"Melhor Escolha\nMakespan: {melhor[0]:.1f}\nInstabilidade: {melhor[1]:.0f}",
+        xy=(melhor[0], melhor[1]),
+        xytext=(txt_offset_x, txt_offset_y), textcoords="offset points",
+        arrowprops=dict(arrowstyle="->", color="#333", lw=1.8),
+        fontsize=10, fontweight="bold",
+        bbox=dict(boxstyle="round,pad=0.5", fc="#fff9c4", ec="#999", alpha=0.97),
+        zorder=12
     )
-
-    plt.step(
-        pareto_makespans,
-        pareto_instabilidades,
-        where="post",
-        color="red",
-        linewidth=2,
-        label="Fronteira de Pareto",
-    )
-    plt.plot(pareto_makespans, pareto_instabilidades, "ro")
-
-    # --- 2. DESENHO DO MARCADOR DO MELHOR PONTO ---
-    plt.plot(
-        melhor_ponto[0], melhor_ponto[1], 
-        marker="*", color="gold", markersize=18, 
-        markeredgecolor="black", zorder=5, label="Melhor Trade-off (Cotovelo)"
-    )
-
-    # Caixa de texto com uma seta apontando para a estrela
-    plt.annotate(
-        f'Melhor Escolha\nTempo: {melhor_ponto[0]:.1f}\nPenalidade: {melhor_ponto[1]:.0f}',
-        xy=(melhor_ponto[0], melhor_ponto[1]),
-        xytext=(15, 25), # Move o texto um pouco para a direita e para cima
-        textcoords="offset points",
-        arrowprops=dict(facecolor='black', shrink=0.05, width=1.5, headwidth=7),
-        fontsize=10,
-        fontweight='bold',
-        bbox=dict(boxstyle="round,pad=0.4", fc="#fff9c4", ec="black", alpha=0.9),
-        zorder=10
-    )
-    # ----------------------------------------------
-
-    plt.title("Fronteira de Pareto: Tempo (Makespan) vs Instabilidade")
-    plt.xlabel("Tempo Total")
-    plt.ylabel("Penalidade de Estabilidade Total")
-    plt.grid(True, linestyle="--", alpha=0.6)
-    plt.legend()
-    
-    pareto_validos = [p for p in pareto_instabilidades if p < 50000]
-
-    if pareto_validos:
-        limite_y = max(max(pareto_validos) * 1.5, 1000)
-        plt.ylim(bottom=-limite_y * 0.05, top=limite_y)
-
+ 
+    # --- Formatação final ---
+    ax.set_xlim(x_ini, x_fim)
+    ax.set_ylim(-top_y * 0.02, top_y)
+    ax.set_title("Fronteira de Pareto: Makespan vs Instabilidade Naval",
+                 fontsize=14, fontweight="bold", pad=15)
+    ax.set_xlabel("Makespan — tempo total da operação (s)", fontsize=11)
+    ax.set_ylabel("Instabilidade Naval Acumulada", fontsize=11)
+    ax.grid(True, linestyle="--", alpha=0.35, color="#aaaaaa")
+    ax.legend(loc="upper right", fontsize=9, framealpha=0.9)
+    ax.spines[["top", "right"]].set_visible(False)
+ 
     plt.tight_layout()
-    plt.savefig(filename)
+    plt.savefig(filename, dpi=150)
     plt.close()
 
 
