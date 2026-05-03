@@ -154,6 +154,7 @@ class Argo:
 
         tempo_guidaste = 0.0
         penalidade = 0.0
+        instabilidade_pura = 0.0
         posicao_garra = (0, 0)
         peso_total_barco = int(np.sum(barco_aux))
 
@@ -228,6 +229,7 @@ class Argo:
             custo_estabilidade, status_estabilidade = self.calcular_estabilidade(barco_aux, peso_total_barco)
 
             penalidade += custo_estabilidade
+            instabilidade_pura += custo_estabilidade
             historico_cm.append(status_estabilidade)
 
             movimento, posicao_garra = self.garra(posicao_garra, pier_y, pier_x)
@@ -374,7 +376,7 @@ class Argo:
             """
             self.file.write(relatorio_final)
 
-        return containers_restantes, makespan_total, penalidade, historico_cm, historico_eventos, historico_rotas
+        return containers_restantes, makespan_total, penalidade, instabilidade_pura, historico_cm, historico_eventos, historico_rotas
 
     def funcao_fitness(self, cromossomo: np.ndarray):
         """
@@ -382,9 +384,9 @@ class Argo:
         No entanto, recompensa menor custo na distância percorrida.
         """
 
-        restantes, makespan, penalidade, _, _, _ = self.simular_descarregamento(cromossomo, log=False)
+        restantes, makespan, penalidade, instabilidade_pura, _, _, _ = self.simular_descarregamento(cromossomo, log=False)
 
-        self.historico_solucoes.append((makespan, penalidade))
+        self.historico_solucoes.append((makespan, instabilidade_pura, restantes))
 
         if restantes > 0:
             fator_falha = 1000000.0 * (restantes ** 2)
